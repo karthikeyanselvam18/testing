@@ -93,7 +93,7 @@ if ($rowsta=mysqli_fetch_array($ressta))
     {
         $cusemail=$row['email'];
         $cusname=$row['name'];
-        $cusmobile=$row['mobile'];
+        $cusmobile=$row['country_code'].$row['mobile'];
         if($cusname == ''){
             $cusname=$row['email'];
         }
@@ -120,7 +120,17 @@ if ($rowsta=mysqli_fetch_array($ressta))
             $landmarkdisp1 = $landmark1.', ';
         }
 
-	$billingaddress = $deliveryname.'<br>'.$mobile.'<br>'.$door.', '.$street.',<br>'.$area.', '.$landmarkdisp1.'<br>'.$city.', '.$state.'<br>'.$country.' - '.$pincode;
+         //get mobile country code
+    $add_sql= "SELECT * FROM `address` WHERE `uid`='".$uid."' AND name='".$deliveryname."' AND door='".urlencode($door)."'";
+    $add_res=mysqli_query($con,$add_sql);
+    if ($adrow=mysqli_fetch_array($add_res))
+    {
+        $bil_countrycode=$adrow['countrycode'];
+    }
+
+	$billingaddress = $deliveryname.'<br>'.$bil_countrycode.$mobile.'<br>'.$door.', '.$street.',<br>'.$area.', '.$landmarkdisp1.'<br>'.$city.', '.$state.'<br>'.$country.' - '.$pincode;
+
+   
     
 	//Generate Shipping Address
 	$dAddrJson = json_decode($deaddress);
@@ -139,7 +149,47 @@ if ($rowsta=mysqli_fetch_array($ressta))
             $landmarkdisp2 = $landmark2.', ';
         }
 
-	$deliveryaddress = $deliveryname.'<br>'.$mobile.'<br>'.$door.', '.$street.',<br>'.$area.', '.$landmarkdisp2.'<br>'.$city.', '.$state.'<br>'.$country.' - '.$pincode;
+          //get mobile country code
+    $add_sql2= "SELECT * FROM `address` WHERE `uid`='".$uid."' AND name='".$deliveryname."' AND door='".urlencode($door)."'";
+    $add_res2=mysqli_query($con,$add_sql2);
+    if ($adrow=mysqli_fetch_array($add_res2))
+    {
+        $del_countrycode=$adrow['countrycode'];
+    }
+
+	// $deliveryaddress = $deliveryname.'<br>'.$mobile.'<br>'.$door.', '.$street.',<br>'.$area.', '.$landmarkdisp2.'<br>'.$city.', '.$state.'<br>'.$country.' - '.$pincode;
+    $deliveryaddress = '';
+    if($deliveryname!=''){
+         $deliveryaddress = $deliveryname;
+    }
+    if($mobile!=''){
+        $deliveryaddress .= '<br>'.$del_countrycode.$mobile;
+   }
+   if($door!=''){
+    $deliveryaddress .= '<br>'.$door;
+    }
+    if($street!=''){
+        $deliveryaddress .= ', '.$street;
+    }
+    if($area!=''){
+        $deliveryaddress .= ',<br>'.$area;
+    }
+    if($landmarkdisp2!=''){
+        $deliveryaddress .= ', '.$landmarkdisp2;
+    }
+    if($city!=''){
+        $deliveryaddress .= '<br>'.$city;
+    }
+    if($state!=''){
+        $deliveryaddress .= ', '.$state;
+    }
+    if($country!=''){
+        $deliveryaddress .= '<br>'.$country;
+    }
+    if($pincode!=''){
+        $deliveryaddress .= ' - '.$pincode;
+    }
+
     if (strlen($billingaddress)< 10) {
 		$billingaddress = $deliveryaddress;
 	}
@@ -213,12 +263,13 @@ $sql2 = "SELECT * FROM orderdetails WHERE orderid='$orderid' AND uid='$uid' ORDE
                 $address_data = 'POTHYS PRIVATE LIMITED<br>
                 T.NAGAR, CHENNAI <br>
                 TAMIL NADU, INDIA<br>
-                enquiry@sandbox.pothys.com<br>';
+                enquiry@pothys.com<br>';
                 $gst_det = 'GSTIN : 33AAHCP7473N1ZT<br>
                 CIN : U74130KA2010PTC052192<br>
                 PAN : AAHCP7473N<br>
                 IEC CODE : 0414045131<br>
                 AD CODE : 0007347<br>
+                Account Number : 41785514337<br>
                 Contact No : +91-8939593990/ 96<br>';
             }else{
                 $address_data = 'Pothys Retail Private Limited<br>
@@ -348,7 +399,7 @@ $sql2 = "SELECT * FROM orderdetails WHERE orderid='$orderid' AND uid='$uid' ORDE
     </div>
     <div class="row">
         <div class="column" align="center">
-            <img src="https://sandbox.pothys.com/images/logos/logo_4.png" style="float: left;width:100%; max-width:100px; max-height: 100px;">
+            <img src="https://www.pothys.com/images/logos/logo_4.png" style="float: left;width:100%; max-width:100px; max-height: 100px;">
 <!--            <span>POTHYS</span>-->
         </div>
     </div>
@@ -488,15 +539,41 @@ $sql2 = "SELECT * FROM orderdetails WHERE orderid='$orderid' AND uid='$uid' ORDE
                     foreach($tailorarray as $key => $value) {
                         $sql5 = "SELECT * FROM `tailormode_options` WHERE sno='".$value."'";
                         $res5 = mysqli_query($con,$sql5);
-                        if($row5 = mysqli_fetch_array($res5)){
-                            if($row5['type'] == "image"){
-                                $tailordetails =$tailordetails.'<div> Design Type - '.$row5['tname'].'</div>';
-                                $tailordetails =$tailordetails.'<div>'.$row5['tname'].'<img src="'.$row5['measurement'].'" style="width:150px;height:auto;"><div>';
-                            }
-                            else{
-                                $tailordetails =$tailordetails.'<div>'.$row5['option_type'].' - '.$row5['measurement'].' '.$row5['dimension'].'</div>';
-                            }
+                        $tailormode_options_count=mysqli_num_rows($res5);
+                        if($tailormode_options_count>0)
+                        {
+                           if($row5 = mysqli_fetch_array($res5)){
+                              if($row5['type'] == "image"){
+                                 $tailordetails =$tailordetails.'<div> Design Type - '.$row5['tname'].'</div>';
+                                 $tailordetails =$tailordetails.'<div><img src="'.$row5['measurement'].'" style="width:150px;height:auto;"><div>';
+                       
+                              }
+                              else{
+                                 $tailordetails =$tailordetails.'<div>'.$row5['option_type'].' - '.$row5['measurement'].' '.$row5['dimension'].'</div>';
+                              }
+                           }
                         }
+                        else
+                        {
+                           $sql5 = "SELECT * FROM `tailormode_options_backup` WHERE sno='".$value."'";
+                       
+								$res5 = mysqli_query($con,$sql5);
+                        $tailormode_options_count=mysqli_num_rows($res5);
+                        if($tailormode_options_count>0)
+                        {
+                           if($row5 = mysqli_fetch_array($res5)){
+                              if($row5['type'] == "image"){
+                                 $tailordetails =$tailordetails.'<div> Design Type - '.$row5['tname'].'</div>';
+                                 $tailordetails =$tailordetails.'<div><img src="'.$row5['measurement'].'" style="width:150px;height:auto;"><div>';
+                       
+                              }
+                              else{
+                                 $tailordetails =$tailordetails.'<div>'.$row5['option_type'].' - '.$row5['measurement'].' '.$row5['dimension'].'</div>';
+                              }
+                           }
+                        
+                        }
+                     }
                     }
 					$tailordetails =$tailordetails.'<br>';
 					if($imprintname != "")
